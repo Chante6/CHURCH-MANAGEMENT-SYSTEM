@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - ADEPER Nyarugunga</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .events-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .event-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .event-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .event-form input,
+        .event-form textarea,
+        .event-form button {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        .event-form textarea {
+            min-height: 80px;
+        }
+
+        .event-form button {
+            background: #174b8a;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+
+        .event-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .event-table th,
+        .event-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .event-table th {
+            background: #174b8a;
+            color: white;
+        }
+
+        .action-btn {
+            padding: 7px 10px;
+            margin: 3px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .edit-btn { background: #d28b16; }
+        .delete-btn { background: #c0392b; }
+
+        #eventMessage {
+            margin: 12px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>ADEPER NYARUGUNGA</h1>
+    <p>Church Management System</p>
+</header>
+
+<nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="index.html">Members</a>
+    <a href="departments.html">Departments</a>
+    <a href="assignments.html">Assignments</a>
+    <a href="finances.html">Finances</a>
+    <a href="events.html">Events</a>
+    <button type="button" onclick="logout()">Logout</button>
+</nav>
+
+<main class="events-container">
+
+    <h1>Church Events Management</h1>
+    <p>Organize and manage church activities and events.</p>
+
+    <section class="event-section">
+        <h2 id="formTitle">Add New Event</h2>
+
+        <form id="eventForm" class="event-form">
+            <input
+                type="text"
+                id="event_name"
+                placeholder="Event Name"
+                maxlength="100"
+                required
+            >
+
+            <input
+                type="date"
+                id="event_date"
+                required
+            >
+
+            <input
+                type="text"
+                id="location"
+                placeholder="Event Location"
+                maxlength="100"
+            >
+
+            <textarea
+                id="description"
+                placeholder="Event Description"
+            ></textarea>
+
+            <button type="submit" id="saveButton">
+                Save Event
+            </button>
+
+            <button
+                type="button"
+                id="cancelButton"
+                style="display:none;background:#777;"
+            >
+                Cancel Edit
+            </button>
+        </form>
+
+        <p id="eventMessage"></p>
+    </section>
+
+    <section class="event-section">
+        <h2>All Church Events</h2>
+
+        <div style="overflow-x:auto;">
+            <table class="event-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Event Name</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="eventsTable">
+                    <tr>
+                        <td colspan="6">Loading events...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<script>
+let events = [];
+let editingEventId = null;
+
+const eventForm = document.getElementById('eventForm');
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+}
+
+function showMessage(message, error = false) {
+    const element = document.getElementById('eventMessage');
+    element.textContent = message;
+    element.style.color = error ? '#c0392b' : 'green';
+}
+
+// Load events
+async function loadEvents() {
+    try {
+        const response = await fetch('/api/events');
+
+        if (!response.ok) throw new Error('Could not load events');
+
+        events = await response.json();
+
+        const table = document.getElementById('eventsTable');
+
+        if (events.length === 0) {
+            table.innerHTML =
+                '<tr><td colspan="6">No events recorded yet.</td></tr>';
+            return;
+        }
+
+        table.innerHTML = events.map(event => `
+            <tr>
+                <td>${event.event_id}</td>
+                <td>${escapeHTML(event.event_name)}</td>
+                <td>${escapeHTML(event.event_date)}</td>
+                <td>${escapeHTML(event.location)}</td>
+                <td>${escapeHTML(event.description)}</td>
+                <td>
+                    <button class="action-btn edit-btn"
+                        onclick="editEvent(${event.event_id})">
+                        Edit
+                    </button>
+
+                    <button class="action-btn delete-btn"
+                        onclick="deleteEvent(${event.event_id})">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+// Add or update event
+eventForm.addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const data = {
+        event_name: document.getElementById('event_name').value,
+        event_date: document.getElementById('event_date').value,
+        location: document.getElementById('location').value,
+        description: document.getElementById('description').value
+    };
+
+    try {
+        const url = editingEventId
+            ? `/api/events/${editingEventId}`
+            : '/api/events';
+
+        const response = await fetch(url, {
+            method: editingEventId ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Operation failed');
+        }
+
+        showMessage(result.message);
+        resetForm();
+        await loadEvents();
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+});
+
+// Edit event
+function editEvent(id) {
+    const event = events.find(item => item.event_id === id);
+    if (!event) return;
+
+    editingEventId = id;
+
+    document.getElementById('event_name').value = event.event_name;
+    document.getElementById('event_date').value =
+        String(event.event_date).slice(0, 10);
+    document.getElementById('location').value = event.location || '';
+    document.getElementById('description').value = event.description || '';
+
+    document.getElementById('formTitle').textContent = 'Update Event';
+    document.getElementById('saveButton').textContent = 'Update Event';
+    document.getElementById('cancelButton').style.display = 'block';
+
+    eventForm.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Reset form
+function resetForm() {
+    eventForm.reset();
+    editingEventId = null;
+
+    document.getElementById('formTitle').textContent = 'Add New Event';
+    document.getElementById('saveButton').textContent = 'Save Event';
+    document.getElementById('cancelButton').style.display = 'none';
+}
+
+// Cancel edit
+document.getElementById('cancelButton').addEventListener('click', resetForm);
+
+// Delete event
+async function deleteEvent(id) {
+    if (!confirm('Are you sure you want to delete this event?')) return;
+
+    try {
+        const response = await fetch(`/api/events/${id}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Delete failed');
+        }
+
+        showMessage(result.message);
+        await loadEvents();
+
+    } catch (error) {
+        showMessage(error.message, true);
+    }
+}
+
+// Start page
+loadEvents();
+
+async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            window.location.href = '/login.html';
+        } else {
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        alert('Unable to connect to the server.');
+    }
+}
+</script>
+
+</body>
+</html>

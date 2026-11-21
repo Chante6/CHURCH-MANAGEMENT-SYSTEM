@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Assignments - ADEPER Nyarugunga</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h2>ADEPER Nyarugunga</h2>
+    <p>Church Management System</p>
+    <nav>
+    <a href="dashboard.html">Dashboard</a> |
+    <a href="index.html">Members</a> |
+    <a href="departments.html">Departments</a> |
+    <a href="assignments.html">Assignments</a> |
+    <a href="finances.html">Finances</a> |
+    <a href="events.html">Events</a>
+
+    <button type="button" onclick="logout()">Logout</button>
+</nav>
+</header>
+
+<main>
+    <section class="add-member">
+        <h2>Assign Member to Department</h2>
+
+        <form id="assignment-form">
+            <label for="member_id">Select Member</label>
+            <select id="member_id" required>
+                <option value="">Choose a member</option>
+            </select>
+
+            <label for="department_id">Select Department</label>
+            <select id="department_id" required>
+                <option value="">Choose a department</option>
+            </select>
+
+            <button type="submit">Assign Member</button>
+        </form>
+
+        <p id="form-message"></p>
+    </section>
+
+    <h1>Department Membership</h1>
+    <p id="assignment-count">Loading assignments...</p>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Member ID</th>
+                    <th>Member Name</th>
+                    <th>Department</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="assignments-list"></tbody>
+        </table>
+    </div>
+
+    <p id="error-message"></p>
+</main>
+
+<script>
+    const form = document.getElementById('assignment-form');
+
+    // Load members into dropdown
+    async function loadMembers() {
+        const response = await fetch('/api/members');
+
+        if (!response.ok) {
+            throw new Error('Could not load members');
+        }
+
+        const members = await response.json();
+        const select = document.getElementById('member_id');
+
+        members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.member_id;
+            option.textContent =
+                `${member.first_name} ${member.last_name}`;
+            select.appendChild(option);
+        });
+    }
+
+    // Load departments into dropdown
+    async function loadDepartments() {
+        const response = await fetch('/api/departments');
+
+        if (!response.ok) {
+            throw new Error('Could not load departments');
+        }
+
+        const departments = await response.json();
+        const select = document.getElementById('department_id');
+
+        departments.forEach(department => {
+            const option = document.createElement('option');
+            option.value = department.department_id;
+            option.textContent = department.department_name;
+            select.appendChild(option);
+        });
+    }
+
+    // Assign a member
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+
+        const assignment = {
+            member_id: document.getElementById('member_id').value,
+            department_id: document.getElementById('department_id').value
+        };
+
+        try {
+            const response = await fetch('/api/assignments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(assignment)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Assignment failed');
+            }
+
+            document.getElementById('form-message').textContent =
+                'Member assigned successfully!';
+
+            form.reset();
+            await loadAssignments();
+
+        } catch (error) {
+            document.getElementById('form-message').textContent =
+                error.message;
+        }
+    });
+
+    // Load and display assignments
+    async function loadAssignments() {
+        try {
+            const response = await fetch('/api/assignments');
+
+            if (!response.ok) {
+                throw new Error('Could not load assignments');
+            }
+
+            const assignments = await response.json();
+            const table = document.getElementById('assignments-list');
+
+            table.innerHTML = '';
+
+            document.getElementById('assignment-count').textContent =
+                assignments.length + ' department assignments';
+
+            assignments.forEach(assignment => {
+                const row = document.createElement('tr');
+
+                const values = [
+                    assignment.member_id,
+                    assignment.first_name + ' ' + assignment.last_name,
+                    assignment.department_name
+                ];
+
+                values.forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+
+                const actionCell = document.createElement('td');
+                const removeButton = document.createElement('button');
+
+                removeButton.textContent = 'Remove';
+
+                removeButton.addEventListener('click', async () => {
+                    const confirmed = confirm(
+                        `Remove ${assignment.first_name} ${assignment.last_name} from ${assignment.department_name}?`
+                    );
+
+                    if (!confirmed) return;
+
+                    try {
+                        const deleteResponse = await fetch(
+                            `/api/assignments/${assignment.member_id}/${assignment.department_id}`,
+                            { method: 'DELETE' }
+                        );
+
+                        const result = await deleteResponse.json();
+
+                        if (!deleteResponse.ok) {
+                            throw new Error(result.message);
+                        }
+
+                        document.getElementById('form-message').textContent =
+                            'Assignment removed successfully!';
+
+                        await loadAssignments();
+
+                    } catch (error) {
+                        document.getElementById('form-message').textContent =
+                            error.message;
+                    }
+                });
+
+                actionCell.appendChild(removeButton);
+                row.appendChild(actionCell);
+                table.appendChild(row);
+            });
+
+        } catch (error) {
+            document.getElementById('error-message').textContent =
+                error.message;
+        }
+    }
+
+    // Load all page data
+    async function initializePage() {
+        try {
+            await Promise.all([
+                loadMembers(),
+                loadDepartments()
+            ]);
+
+            await loadAssignments();
+
+        } catch (error) {
+            document.getElementById('error-message').textContent =
+                error.message;
+        }
+    }
+
+    initializePage();
+
+    async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            window.location.href = '/login.html';
+        } else {
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        alert('Unable to connect to the server.');
+    }
+}
+</script>
+
+</body>
+</html>

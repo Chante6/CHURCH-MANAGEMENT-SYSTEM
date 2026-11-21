@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Departments - ADEPER Nyarugunga</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h2>ADEPER Nyarugunga</h2>
+    <p>Church Management System</p>
+   <nav>
+    <a href="dashboard.html">Dashboard</a> |
+    <a href="index.html">Members</a> |
+    <a href="departments.html">Departments</a> |
+    <a href="assignments.html">Assignments</a> |
+    <a href="finances.html">Finances</a> |
+    <a href="events.html">Events</a>
+
+    <button type="button" onclick="logout()">Logout</button>
+</nav>
+</header>
+
+<main>
+    <section class="add-member">
+        <h2 id="form-title">Add Department</h2>
+
+        <form id="department-form">
+            <input
+                type="text"
+                id="department_name"
+                placeholder="Department Name"
+                required
+            >
+
+            <textarea
+                id="description"
+                placeholder="Department Description"
+                rows="4"
+            ></textarea>
+
+            <button type="submit" id="submit-button">
+                Add Department
+            </button>
+
+            <button type="button" id="cancel-edit" hidden>
+                Cancel Edit
+            </button>
+        </form>
+
+        <p id="form-message"></p>
+    </section>
+
+    <h1>Church Departments</h1>
+    <p id="department-count">Loading departments...</p>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Department Name</th>
+                    <th>Description</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="departments-list"></tbody>
+        </table>
+    </div>
+
+    <p id="error-message"></p>
+</main>
+
+<script>
+    let editingDepartmentId = null;
+
+    const form = document.getElementById('department-form');
+
+    function resetForm() {
+        editingDepartmentId = null;
+        form.reset();
+
+        document.getElementById('form-title').textContent =
+            'Add Department';
+
+        document.getElementById('submit-button').textContent =
+            'Add Department';
+
+        document.getElementById('cancel-edit').hidden = true;
+    }
+
+    // Add or update department
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const department = {
+            department_name: document.getElementById('department_name').value.trim(),
+            description: document.getElementById('description').value.trim()
+        };
+
+        try {
+            const isEditing = editingDepartmentId !== null;
+
+            const response = await fetch(
+                isEditing
+                    ? `/api/departments/${editingDepartmentId}`
+                    : '/api/departments',
+                {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(department)
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Operation failed');
+            }
+
+            document.getElementById('form-message').textContent =
+                isEditing
+                    ? 'Department updated successfully!'
+                    : 'Department added successfully!';
+
+            resetForm();
+            await loadDepartments();
+
+        } catch (error) {
+            document.getElementById('form-message').textContent =
+                error.message;
+        }
+    });
+
+    // Cancel editing
+    document.getElementById('cancel-edit')
+        .addEventListener('click', () => {
+            resetForm();
+            document.getElementById('form-message').textContent =
+                'Editing cancelled.';
+        });
+
+    // Load departments
+    async function loadDepartments() {
+        try {
+            const response = await fetch('/api/departments');
+
+            if (!response.ok) {
+                throw new Error('Could not load departments');
+            }
+
+            const departments = await response.json();
+
+            const table = document.getElementById('departments-list');
+
+            table.innerHTML = '';
+
+            document.getElementById('department-count').textContent =
+                departments.length + ' registered departments';
+
+            departments.forEach(department => {
+                const row = document.createElement('tr');
+
+                [
+                    department.department_id,
+                    department.department_name,
+                    department.description,
+                    department.created_at
+                        ? String(department.created_at).substring(0, 10)
+                        : '-'
+                ].forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value || '-';
+                    row.appendChild(cell);
+                });
+
+                const actions = document.createElement('td');
+
+                // Edit button
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+
+                editButton.addEventListener('click', () => {
+                    editingDepartmentId = department.department_id;
+
+                    document.getElementById('department_name').value =
+                        department.department_name;
+
+                    document.getElementById('description').value =
+                        department.description || '';
+
+                    document.getElementById('form-title').textContent =
+                        'Edit Department';
+
+                    document.getElementById('submit-button').textContent =
+                        'Update Department';
+
+                    document.getElementById('cancel-edit').hidden = false;
+
+                    document.getElementById('department-form').scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+
+                // Delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+
+                deleteButton.addEventListener('click', async () => {
+                    const confirmed = confirm(
+                        `Are you sure you want to delete ${department.department_name}?`
+                    );
+
+                    if (!confirmed) return;
+
+                    try {
+                        const response = await fetch(
+                            `/api/departments/${department.department_id}`,
+                            { method: 'DELETE' }
+                        );
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(
+                                result.message || 'Could not delete department'
+                            );
+                        }
+
+                        if (editingDepartmentId === department.department_id) {
+                            resetForm();
+                        }
+
+                        document.getElementById('form-message').textContent =
+                            'Department deleted successfully!';
+
+                        await loadDepartments();
+
+                    } catch (error) {
+                        document.getElementById('form-message').textContent =
+                            error.message;
+                    }
+                });
+
+                actions.appendChild(editButton);
+                actions.appendChild(deleteButton);
+
+                row.appendChild(actions);
+                table.appendChild(row);
+            });
+
+        } catch (error) {
+            document.getElementById('error-message').textContent =
+                'Unable to load departments. Check the server.';
+            console.error(error);
+        }
+    }
+
+    loadDepartments();
+
+    async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            window.location.href = '/login.html';
+        } else {
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        alert('Unable to connect to the server.');
+    }
+}
+</script>
+
+</body>
+</html>

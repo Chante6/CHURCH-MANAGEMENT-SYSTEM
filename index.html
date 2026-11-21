@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADEPER Nyarugunga</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h2>ADEPER Nyarugunga</h2>
+        <p>Church Management System</p>
+        <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="index.html">Members</a>
+    <a href="departments.html">Departments</a>
+    <a href="assignments.html">Assignments</a>
+    <a href="finances.html">Finances</a>
+    <a href="events.html">Events</a>
+    <button type="button" onclick="logout()">Logout</button>
+</nav>
+    </header>
+
+    <main>
+        <section class="add-member">
+            <h2 id="form-title">Register New Member</h2>
+
+            <form id="member-form">
+                <input type="text" id="first_name" placeholder="First Name" required>
+                <input type="text" id="last_name" placeholder="Last Name" required>
+
+                <select id="gender">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+
+                <input type="tel" id="phone" placeholder="Phone Number">
+                <input type="email" id="email" placeholder="Email Address">
+
+                <label for="date_joined">Date Joined</label>
+                <input type="date" id="date_joined">
+
+                <button type="submit" id="submit-button">Register Member</button>
+                <button type="button" id="cancel-edit" hidden>Cancel Edit</button>
+            </form>
+
+            <p id="form-message"></p>
+        </section>
+
+        <h1>Church Members</h1>
+        <p id="member-count">Loading members...</p>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Gender</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="members-list"></tbody>
+            </table>
+        </div>
+
+        <p id="error-message"></p>
+    </main>
+
+    <script>
+        let editingMemberId = null;
+
+        // Reset form
+        function resetMemberForm() {
+            editingMemberId = null;
+
+            document.getElementById('member-form').reset();
+
+            document.getElementById('form-title').textContent =
+                'Register New Member';
+
+            document.getElementById('submit-button').textContent =
+                'Register Member';
+
+            document.getElementById('cancel-edit').hidden = true;
+        }
+
+        // Register or update member
+        document.getElementById('member-form')
+            .addEventListener('submit', async function(event) {
+
+            event.preventDefault();
+
+            const member = {
+                first_name: document.getElementById('first_name').value.trim(),
+                last_name: document.getElementById('last_name').value.trim(),
+                gender: document.getElementById('gender').value,
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                date_joined: document.getElementById('date_joined').value
+            };
+
+            try {
+                const isEditing = editingMemberId !== null;
+
+                const url = isEditing
+                    ? `/api/members/${editingMemberId}`
+                    : '/api/members';
+
+                const response = await fetch(url, {
+                    method: isEditing ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(member)
+                });
+
+                const responseText = await response.text();
+                let result;
+
+                try {
+                    result = JSON.parse(responseText);
+                } catch (error) {
+                    throw new Error('The server returned an unexpected response.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Operation failed');
+                }
+
+                document.getElementById('form-message').textContent =
+                    isEditing
+                        ? 'Member updated successfully!'
+                        : 'Member registered successfully!';
+
+                resetMemberForm();
+                await loadMembers();
+
+            } catch (error) {
+                document.getElementById('form-message').textContent =
+                    error.message;
+            }
+        });
+
+        // Cancel editing
+        document.getElementById('cancel-edit')
+            .addEventListener('click', () => {
+
+                resetMemberForm();
+
+                document.getElementById('form-message').textContent =
+                    'Editing cancelled.';
+            });
+
+        // Load all members
+        async function loadMembers() {
+            try {
+                const response = await fetch('/api/members');
+
+                if (!response.ok) {
+                    throw new Error('Could not load members');
+                }
+
+                const members = await response.json();
+
+                const table = document.getElementById('members-list');
+
+                document.getElementById('member-count').textContent =
+                    members.length + ' registered members';
+
+                table.innerHTML = '';
+
+                members.forEach(member => {
+                    const row = document.createElement('tr');
+
+                    [
+                        member.member_id,
+                        member.first_name,
+                        member.last_name,
+                        member.gender,
+                        member.phone,
+                        member.email
+                    ].forEach(value => {
+                        const cell = document.createElement('td');
+                        cell.textContent = value || '-';
+                        row.appendChild(cell);
+                    });
+
+                    const actionsCell = document.createElement('td');
+
+                    // Edit button
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Edit';
+
+                    editButton.addEventListener('click', () => {
+                        editingMemberId = member.member_id;
+
+                        document.getElementById('first_name').value =
+                            member.first_name || '';
+
+                        document.getElementById('last_name').value =
+                            member.last_name || '';
+
+                        document.getElementById('gender').value =
+                            member.gender || '';
+
+                        document.getElementById('phone').value =
+                            member.phone || '';
+
+                        document.getElementById('email').value =
+                            member.email || '';
+
+                        document.getElementById('date_joined').value =
+                            member.date_joined
+                                ? String(member.date_joined).substring(0, 10)
+                                : '';
+
+                        document.getElementById('form-title').textContent =
+                            'Edit Member';
+
+                        document.getElementById('submit-button').textContent =
+                            'Update Member';
+
+                        document.getElementById('cancel-edit').hidden = false;
+
+                        document.getElementById('form-message').textContent =
+                            'Editing member ID: ' + member.member_id;
+
+                        document.getElementById('member-form').scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    });
+
+                    // Delete button
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+
+                    deleteButton.addEventListener('click', async () => {
+                        const confirmed = confirm(
+                            `Are you sure you want to delete ${member.first_name} ${member.last_name}?`
+                        );
+
+                        if (!confirmed) return;
+
+                        try {
+                            const response = await fetch(
+                                `/api/members/${member.member_id}`,
+                                { method: 'DELETE' }
+                            );
+
+                            const responseText = await response.text();
+                            let result;
+
+                            try {
+                                result = JSON.parse(responseText);
+                            } catch (error) {
+                                throw new Error(
+                                    'The server returned an unexpected response.'
+                                );
+                            }
+
+                            if (!response.ok) {
+                                throw new Error(
+                                    result.message || 'Could not delete member'
+                                );
+                            }
+
+                            if (editingMemberId === member.member_id) {
+                                resetMemberForm();
+                            }
+
+                            document.getElementById('form-message').textContent =
+                                'Member deleted successfully!';
+
+                            await loadMembers();
+
+                        } catch (error) {
+                            document.getElementById('form-message').textContent =
+                                error.message;
+                        }
+                    });
+
+                    actionsCell.appendChild(editButton);
+                    actionsCell.appendChild(deleteButton);
+
+                    row.appendChild(actionsCell);
+                    table.appendChild(row);
+                });
+
+            } catch (error) {
+                document.getElementById('error-message').textContent =
+                    'Unable to load members. Please try again.';
+
+                console.error(error);
+            }
+        }
+
+        // Load members when page opens
+        loadMembers();
+
+        async function logout() {
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            window.location.href = '/login.html';
+        } else {
+            alert('Logout failed. Please try again.');
+        }
+    } catch (error) {
+        alert('Unable to connect to the server.');
+    }
+}
+    </script>
+    
+</body>
+</html>

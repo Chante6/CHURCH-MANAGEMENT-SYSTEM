@@ -1,0 +1,195 @@
+
+
+/* Registration Form Design */
+
+.add-member {
+    background: white;
+    padding: 25px;
+    margin: 25px 0;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+}
+
+.add-member h2 {
+    color: #102a43;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+#member-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+#member-form input,
+#member-form select {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #d9e2ec;
+    border-radius: 7px;
+    font-size: 14px;
+    outline: none;
+}
+
+#member-form input:focus,
+#member-form select:focus {
+    border-color: #102a43;
+}
+
+#member-form label {
+    align-self: center;
+}
+
+#member-form button {
+    background: #102a43;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    grid-column: 1 / -1;
+}
+
+#member-form button:hover {
+    background: #243f5a;
+}
+
+#form-message {
+    color: #16803c;
+    margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+    #member-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6fa;
+    color: #172b4d;
+}
+
+header {
+    background: #102a43;
+    color: white;
+    padding: 20px 30px;
+}
+
+header h2 {
+    margin: 0 0 5px;
+}
+
+header p {
+    margin: 0;
+    color: #d9e2ec;
+}
+
+main {
+    padding: 30px;
+}
+
+.table-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+    background: #eaf0f6;
+}
+
+tr:hover {
+    background: #f4f7fb;
+}
+
+#error-message {
+    color: #c0392b;
+}
+
+@media (max-width: 600px) {
+    main {
+        padding: 15px;
+    }
+}
+/* Member Action Buttons */
+
+#members-list button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    margin: 3px;
+    font-weight: bold;
+}
+
+#members-list button:first-child {
+    background: #1976d2;
+}
+
+#members-list button:last-child {
+    background: #d32f2f;
+}
+
+#members-list button:hover {
+    opacity: 0.8;
+}
+
+nav {
+    margin-top: 15px;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 15px;
+    font-weight: bold;
+}
+
+#department-form {
+    display: grid;
+    gap: 15px;
+}
+
+#department-form input,
+#department-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px;
+    border: 1px solid #d9e2ec;
+    border-radius: 7px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+}
+
+#department-form button {
+    padding: 13px;
+    border: none;
+    border-radius: 7px;
+    background: #102a43;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
