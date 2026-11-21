@@ -63,3 +63,9 @@ This project was developed to support the management of church members, departme
 
 ## Author
 Chante Dufitimana
+
+
+## Application Screenshots
+
+### Dashboard
+![Church Management System Dashboard](screenshots/dashboard.png)
