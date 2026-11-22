@@ -1,5 +1,4 @@
 
-
 /* Registration Form Design */
 
 .add-member {
@@ -68,6 +67,8 @@
     }
 }
 
+/* General Styling */
+
 * {
     box-sizing: border-box;
 }
@@ -96,6 +97,7 @@ header p {
 
 main {
     padding: 30px;
+    color: #172b4d;
 }
 
 .table-container {
@@ -108,12 +110,14 @@ main {
 table {
     width: 100%;
     border-collapse: collapse;
+    color: #172b4d;
 }
 
 th, td {
     padding: 14px;
     text-align: left;
     border-bottom: 1px solid #e5e7eb;
+    color: #172b4d;
 }
 
 th {
@@ -133,6 +137,7 @@ tr:hover {
         padding: 15px;
     }
 }
+
 /* Member Action Buttons */
 
 #members-list button {
@@ -157,16 +162,28 @@ tr:hover {
     opacity: 0.8;
 }
 
+/* Navigation */
+
+/* Navigation Menu */
+
 nav {
-    margin-top: 15px;
+    margin-top: 0;
+    background: #102a43;
+    padding: 15px 30px;
 }
 
 nav a {
     color: white;
     text-decoration: none;
-    margin-right: 15px;
+    margin-right: 20px;
     font-weight: bold;
 }
+
+nav a:hover {
+    color: #d9e2ec;
+}
+
+/* Department Form */
 
 #department-form {
     display: grid;
@@ -192,4 +209,13 @@ nav a {
     color: white;
     cursor: pointer;
     font-weight: bold;
+}
+
+/* Consistent Text Colors Across Management Pages */
+
+main h1,
+main h2,
+main h3,
+label {
+    color: #172b4d;
 }
